@@ -1,5 +1,6 @@
 #pragma once
 
+
 struct vecBuf{
     uint32_t fIndex=0;
     std::wstring fPath=L"";
@@ -80,3 +81,7 @@ extern bool dpmWriteDDB(ddb& db,std::wstring ddpPath);
 extern bool dpmReadDDB(ddb& db,std::wstring ddbPath);
 extern bool dpmGetSysDevs(std::vector<devInfo>& sysDevs);
 extern bool dpmMatchDevs(std::vector<devInfo>& sysDevs,ddb& db,std::vector<std::wstring> &devMatches);
+extern std::string ws2s(const std::wstring& s, int slength = 0);
+extern std::wstring s2ws(const std::string& s, int slength = 0);
+extern uint8_t check_bom(const char* data, size_t size);
+extern std::wstring ConvertUtf16LeBufferToWString(const char* buffer, size_t size_in_bytes);

@@ -18,6 +18,8 @@ namespace fs=std::filesystem;
 
 void usage();
 
+
+
 wchar_t selfPathFull[MAX_PATH];
 wchar_t selfPath[MAX_PATH];
 wchar_t selfName[MAX_PATH];
@@ -73,24 +75,39 @@ int wmain(int argc,wchar_t* argv[]){
                     std::wprintf(L"Error: unable to get file size of \"%s\"\n",fPathFull.c_str());
                     continue;
                 }
-                size_t fOffs=0;
-                // Check for BOM
-                if(fSize>=2){
-                    char bom[2];
-                    file.read(bom,2);
-                    if(bom[0]=='\xFF'&&bom[1]=='\xFE'){
-                        fOffs=2;
-                    } else {
-                        file.seekg(0);
-                        fOffs=0;
+                std::string file_data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                //size_t fOffs=0;
+                //size_t fLenW = (fSize - fOffs) / sizeof(wchar_t);
+                //f.fData = std::wstring(fLenW, L'\0');
+                //file.read(reinterpret_cast<char*>(&f.fData[0]), fLenW * sizeof(wchar_t));
+                //if (!file) {
+                //  std::wprintf(L"Error: Unable to read file contents of \"%s\".\n", fPathFull.c_str());
+                //  continue;
+                //}
+                //file.seekg(0, std::ios::beg);
+                //char bomdat[4];
+                //file.read(bomdat,4);
+                uint8_t bom = check_bom(file_data.c_str(), file_data.size());
+                if (bom) {
+                  if (bom == 4) { // UTF16-LE
+                    f.fData = ConvertUtf16LeBufferToWString(file_data.c_str(), file_data.size());
+                    //f.fData = convu16le.from_bytes(
+                    //  reinterpret_cast<const char*> (&file_data[0]),
+                    //  reinterpret_cast<const char*> (&file_data[0] + file_data.size()));
+                    if (f.fData.at(0) == L'\xFEFF') {
+                      f.fData.replace(0, 1, L" ");
                     }
-                }
-                size_t fLenW=(fSize-fOffs)/sizeof(wchar_t);
-                f.fData=std::wstring(fLenW,L'\0');
-                file.read(reinterpret_cast<char*>(&f.fData[0]),fLenW*sizeof(wchar_t));
-                if(!file){
-                    std::wprintf(L"Error: Unable to read file contents of \"%s\".\n",fPathFull.c_str());
+                    f.fData.shrink_to_fit();
+                  }
+                  else if (bom == 1) {
+                    f.fData = s2ws(file_data.c_str() + 3);
+                  }
+                  else {
+                    std::wprintf(L"Unhandled BOM!");
                     continue;
+                  }
+                } else {
+                  f.fData = s2ws(file_data);
                 }
                 fList.push_back(f);
             }
@@ -151,6 +168,7 @@ int wmain(int argc,wchar_t* argv[]){
 void usage(){
     std::wprintf(L"Usage:\n[Generate DB]\n%s <DriverPath> <Dest.ddb>\n\n[Scan DB]\n%s <Path.ddb> (-list|-drvload)\n\n",selfName,selfName);
 }
+
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu

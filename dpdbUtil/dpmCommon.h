@@ -12,15 +12,15 @@
 std::string dpmCurlRet;
 std::locale dpmLoc;
 
-const char* UTF_16_BE_BOM="\xFE\xFF";
-const char* UTF_16_LE_BOM="\xFF\xFE";
-const char* UTF_8_BOM="\xEF\xBB\xBF";
-const char* UTF_32_BE_BOM="\x00\x00\xFE\xFF";
-const char* UTF_32_LE_BOM="\xFF\xFE\x00\x00";
 
 //std::wstring_convert<std::codecvt_utf16<wchar_t,0x10ffff,std::little_endian>,wchar_t> convu16le;
 
 bool dpmDoUpdate=false;
+const char* UTF_16_BE_BOM = "\xFE\xFF";
+const char* UTF_16_LE_BOM = "\xFF\xFE";
+const char* UTF_8_BOM = "\xEF\xBB\xBF";
+const char* UTF_32_BE_BOM = "\x00\x00\xFE\xFF";
+const char* UTF_32_LE_BOM = "\xFF\xFE\x00\x00";
 
 // STDMETHODIMP CArchiveExtractCallbackMem::CryptoGetTextPassword(BSTR*
 // password){
@@ -285,9 +285,7 @@ static std::wregex exp_slcm(L"^[\\s\\t]*;.*");
 
 void getLocalDPs();
 dp fName2DP(std::wstring fName);
-uint8_t check_bom(const char* data,size_t size);
-std::string ws2s(const std::wstring& s,int slength=0);
-std::wstring s2ws(const std::string& s,int slength=0);
+//uint8_t check_bom(const char* data,size_t size);
 bool dpGetDB(dp& rdp);
 void dbRawRead(std::vector<char>& buf,uint16_t l,uint32_t& p,std::vector<char>& vStr);
 void dbRawReadW(std::vector<char>& buf,uint16_t l,uint32_t& p,std::vector<wchar_t>& vStr);

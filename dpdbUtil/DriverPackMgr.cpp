@@ -547,7 +547,6 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
         // std::algorithm::split_regex(vInf,fList[j].fData,regex("___"));
         // continue;
         while(!getline(sInf,line).eof()){
-            if(lineFilter(line)) continue;
             preallocSect++;
         }
         vecInf.reserve(preallocSect);
@@ -624,11 +623,7 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
                             }
                         }
                     } else{
-                        wprintf(L"~!MfgMisMatch@%s\\%s,%d:%s\r\n",newDriver.fPath.c_str(),
-                                newDriver.fName.c_str(),iLine,line.c_str());
-                        //
-                        std::wcout<<L"~!MfgMisMatch@"+newDriver.fPath+L"\\"+newDriver.fName+L","+s2ws(std::to_string(iLine))+L"="+std::wstring(line);
-                        // wcout<<endl;
+                        std::wprintf(L"~!MfgMisMatch@%s\\%s:%u= %s\r\n", newDriver.fPath.c_str(), newDriver.fName.c_str(), iLine, line.c_str());
                     }
                 }
             }
@@ -645,7 +640,7 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
                 if(!lineFilter(line)) infSect.lines.push_back(line);
                 //} else{
                 //
-                std::wcout<<L"~!AssignMisMatch@"+newDriver.fPath+L"\\"+newDriver.fName+L","+s2ws(std::to_string(iLine))+L"="+std::wstring(line);
+                std::wprintf(L"~!AssignMisMatch@%s\\%s:%u= %s\r\n", newDriver.fPath.c_str(), newDriver.fName.c_str(), iLine, line.c_str());
                 //    wcout<<endl;
                 //    continue;
                 //}
@@ -656,6 +651,28 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
                 infSect.lines.clear();
                 infSect.lines.shrink_to_fit();
                 infSect.sect.clear();
+            } else {
+              if (iLine >= preallocSect) {
+                if (infSect.sect == L"version" || infSect.sect == L"manufacturer" ||
+                  infSect.sect == L"strings") {
+                  infSect.lines.shrink_to_fit();
+                  vecInf.push_back(infSect);
+                }
+                else {
+                  if (std::find(mfgsects.begin(), mfgsects.end(), infSect.sect) !=
+                    mfgsects.end()) {
+                    infSect.lines.shrink_to_fit();
+                    // if(mfgsects.size()>2&&j>=28){
+                    //     wcout<<L"catch";
+                    // }
+                    vecInf.push_back(infSect);
+                  }
+                }
+                preallocSectLines = 0;
+                infSect.lines.clear();
+                infSect.lines.shrink_to_fit();
+                infSect.sect.clear();
+              }
             }
             if(vecInf.size()==0){
                 // Inf contains no sections.
@@ -667,7 +684,7 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
             }
             if(!vecInfHasSect(vecInf,L"strings")){
                 wprintf(L"~!noStrSect\r\n");
-                continue;
+                //continue;
             }
             if(!vecInfHasSect(vecInf,L"manufacturer")){
                 wprintf(L"~!noMfgSect\r\n");
@@ -853,9 +870,6 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
                                         wprintf(L"~!StrRefNoMatch@%s\\%s,%s\r\n",
                                                 newDriver.fPath.c_str(),newDriver.fName.c_str(),
                                                 z.c_str());
-                                        //
-                                        std::wcout<<L"~!StrRefNoMatch@"+newDriver.fPath+L"\\"+newDriver.fName+L","+z;
-                                        // wcout<<endl;
                                     }
                                     bool isNewStr=true;
                                     bool isNewDev=true;
@@ -910,17 +924,11 @@ bool dpmGenDDB(ddb& db, std::vector<vecBuf>& fList){
                                     wprintf(L"~!StrAssignMisMatch@%s\\%s,%s\r\n",
                                             newDriver.fPath.c_str(),newDriver.fName.c_str(),
                                             z.c_str());
-                                    //
-                                    std::wcout<<L"~!StrAssignMisMatch@"+newDriver.fPath+L"\\"+newDriver.fName+L","+std::wstring(z);
-                                    // wcout<<endl;
                                 }
                             }
                         } else{
                             wprintf(L"~!DevMisMatch@%s\\%s,%s\r\n",newDriver.fPath.c_str(),
                                     newDriver.fName.c_str(),z.c_str());
-                            //
-                            std::wcout<<L"~!DevMisMatch@"+newDriver.fPath+L"\\"+newDriver.fName+L","+std::wstring(z);
-                            // wcout<<endl;
                         }
                     }
                 }
@@ -2093,37 +2101,38 @@ void dbGetWStr(std::vector<char>& buf,uint32_t& p,std::vector<char>& vStr,std::w
 }
 #pragma endregion dpmLoadDPDB
 
-std::wstring ConvertUtf16LeBufferToWString(const char* buffer,size_t size_in_bytes){
-    if(buffer==nullptr||size_in_bytes==0){
-        return std::wstring();
+
+std::wstring ConvertUtf16LeBufferToWString(const char* buffer, size_t size_in_bytes) {
+  if (buffer == nullptr || size_in_bytes == 0) {
+    return std::wstring();
+  }
+
+  size_t offset = 0;
+
+  // Check for BOM (Byte Order Mark)
+  if (size_in_bytes >= 2) {
+    unsigned char byte1 = static_cast<unsigned char>(buffer[0]);
+    unsigned char byte2 = static_cast<unsigned char>(buffer[1]);
+
+    if (byte1 == 0xFF && byte2 == 0xFE) {
+      // UTF-16LE BOM detected, skip it
+      offset = 2;
     }
+  }
 
-    size_t offset=0;
+  // Calculate the number of wchar_t elements
+  size_t num_chars = (size_in_bytes - offset) / sizeof(wchar_t);
 
-    // Check for BOM (Byte Order Mark)
-    if(size_in_bytes>=2){
-        unsigned char byte1=static_cast<unsigned char>(buffer[0]);
-        unsigned char byte2=static_cast<unsigned char>(buffer[1]);
+  // Ensure that the remaining bytes form complete wchar_t units
+  if ((size_in_bytes - offset) % sizeof(wchar_t) != 0) {
+    std::cerr << "Warning: Buffer size is not a multiple of wchar_t size. Truncating incomplete character.\n";
+  }
 
-        if(byte1==0xFF&&byte2==0xFE){
-            // UTF-16LE BOM detected, skip it
-            offset=2;
-        }
-    }
+  // Reinterpret the buffer as wchar_t*
+  const wchar_t* wchar_buffer = reinterpret_cast<const wchar_t*>(buffer + offset);
 
-    // Calculate the number of wchar_t elements
-    size_t num_chars=(size_in_bytes-offset)/sizeof(wchar_t);
+  // Create a wstring from the wchar_t buffer
+  std::wstring result(wchar_buffer, num_chars);
 
-    // Ensure that the remaining bytes form complete wchar_t units
-    if((size_in_bytes-offset)%sizeof(wchar_t)!=0){
-        std::cerr<<"Warning: Buffer size is not a multiple of wchar_t size. Truncating incomplete character.\n";
-    }
-
-    // Reinterpret the buffer as wchar_t*
-    const wchar_t* wchar_buffer=reinterpret_cast<const wchar_t*>(buffer+offset);
-
-    // Create a wstring from the wchar_t buffer
-    std::wstring result(wchar_buffer,num_chars);
-
-    return result;
+  return result;
 }
