@@ -72,6 +72,39 @@ extern int dpmMain(){
     return 0;
 }
 
+// Ref: https://stackoverflow.com/a/4130267
+const wchar_t* WinGetEnv(const wchar_t* name){
+    const DWORD buffSize=65535;
+    static wchar_t buffer[buffSize];
+    if(GetEnvironmentVariableW(name,buffer,buffSize)){
+        return buffer;
+    } else{
+        return 0;
+    }
+}
+
+// Ref: Gemini 2.5 Pro
+std::wstring GetNativeProcessorArchitectureString(){
+    SYSTEM_INFO sysInfo;
+    GetNativeSystemInfo(&sysInfo); // This gets the true hardware architecture
+
+    switch(sysInfo.wProcessorArchitecture){
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        return L"ntamd64"; // x64
+    case PROCESSOR_ARCHITECTURE_ARM:
+        return L"ntarm";
+    case PROCESSOR_ARCHITECTURE_ARM64:
+        return L"ntarm64";
+    case PROCESSOR_ARCHITECTURE_IA64: // Itanium (rare now)
+        return L"ntia64";
+    case PROCESSOR_ARCHITECTURE_INTEL: // x86
+        return L"ntx86";
+    case PROCESSOR_ARCHITECTURE_UNKNOWN:
+    default:
+        return L"unknown";
+    }
+}
+
 bool dpmMatchDevs(std::vector<devInfo> &sysDevs, ddb &db,std::vector<std::wstring>& matchList){
     std::vector<std::wstring>::iterator it;
     bool drvMatch;
@@ -178,9 +211,28 @@ bool dpmMatchDevs(std::vector<devInfo> &sysDevs, ddb &db,std::vector<std::wstrin
             // Skips driver if not correct Architecture.
             if(doPerf) daPerf.start();
             if(dpDriver.drvPlats.size()){
+                USHORT processArch=IMAGE_FILE_MACHINE_UNKNOWN;
+                USHORT nativeArch=IMAGE_FILE_MACHINE_UNKNOWN;
+                std::wstring envArch=WinGetEnv(L"PROCESSOR_ARCHITECTURE");
+                std::wstring curArch{L"nt"};
+                curArch.reserve(envArch.size()+2);
+                std::transform(envArch.begin(),envArch.end(),envArch.begin(),
+                               [](wchar_t c){ return static_cast<wchar_t>(std::towlower(c)); });
+                curArch+=envArch;
+                if(IsWow64Process2(GetCurrentProcess(),&processArch,&nativeArch)){
+                    switch(nativeArch){
+                    case IMAGE_FILE_MACHINE_UNKNOWN:   curArch=L"Unknown";
+                    case IMAGE_FILE_MACHINE_I386:      curArch=L"ntx86";
+                    case IMAGE_FILE_MACHINE_AMD64:     curArch=L"ntamd64";
+                    case IMAGE_FILE_MACHINE_ARM:       curArch=L"ntarm";
+                    case IMAGE_FILE_MACHINE_ARMNT:     curArch=L"ntarmthumb"; // Often just "ARM"
+                    case IMAGE_FILE_MACHINE_ARM64:     curArch=L"ntarm64";
+                    default:                           curArch;
+                    }
+                }
                 hasArch=0;
                 for(std::wstring v:dpDriver.drvPlats){
-                    if(v.find(L"ntamd64")==std::string::npos) continue;
+                    if(v.find(curArch)==std::string::npos) continue;
                     hasArch=1;
                     break;
                 }
