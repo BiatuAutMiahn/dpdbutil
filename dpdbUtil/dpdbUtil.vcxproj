@@ -146,6 +146,10 @@
   <ItemGroup>
     <ClInclude Include="dpmCommon.h" />
     <ClInclude Include="DriverPackMgr.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ddbUtil.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

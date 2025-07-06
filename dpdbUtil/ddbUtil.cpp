@@ -166,7 +166,7 @@ int wmain(int argc,wchar_t* argv[]){
 }
 
 void usage(){
-    std::wprintf(L"Usage:\n[Generate DB]\n%s <DriverPath> <Dest.ddb>\n\n[Scan DB]\n%s <Path.ddb> (-list|-drvload)\n\n",selfName,selfName);
+    std::wprintf(L"[Infinity.ddbUtil v1.0]\nUsage:\n[Generate DB]\n%s <DriverPath> <Dest.ddb>\n\n[Scan DB]\n%s <Path.ddb> (-list|-drvload)\n\n",selfName,selfName);
 }
 
 
