@@ -221,13 +221,28 @@ bool dpmMatchDevs(std::vector<devInfo> &sysDevs, ddb &db,std::vector<std::wstrin
                 curArch+=envArch;
                 if(IsWow64Process2(GetCurrentProcess(),&processArch,&nativeArch)){
                     switch(nativeArch){
-                    case IMAGE_FILE_MACHINE_UNKNOWN:   curArch=L"Unknown";
-                    case IMAGE_FILE_MACHINE_I386:      curArch=L"ntx86";
-                    case IMAGE_FILE_MACHINE_AMD64:     curArch=L"ntamd64";
-                    case IMAGE_FILE_MACHINE_ARM:       curArch=L"ntarm";
-                    case IMAGE_FILE_MACHINE_ARMNT:     curArch=L"ntarmthumb"; // Often just "ARM"
-                    case IMAGE_FILE_MACHINE_ARM64:     curArch=L"ntarm64";
-                    default:                           curArch;
+                    case IMAGE_FILE_MACHINE_UNKNOWN:
+                      curArch=L"Unknown";
+                      break;
+                    case IMAGE_FILE_MACHINE_I386:
+                      curArch=L"ntx86";
+                      break;
+                    case IMAGE_FILE_MACHINE_AMD64:
+                      curArch=L"ntamd64";
+                      break;
+                    case IMAGE_FILE_MACHINE_ARM:
+                      curArch=L"ntarm";
+                      break;
+                    case IMAGE_FILE_MACHINE_ARMNT:
+                      curArch=L"ntarmthumb"; // Often just "ARM"
+                      break;
+                    case IMAGE_FILE_MACHINE_ARM64:
+                      curArch=L"ntarm64";
+                      break;
+                    default:
+                      curArch;
+                      break;
+
                     }
                 }
                 hasArch=0;
